@@ -157,7 +157,7 @@
       </div>
     </div>
     <div id="dynamic-content-root">
-      <div style="text-align: center; padding: 25px; color: var(--accent-cyan);">⏳ Загрузка билетов и ключей из папок Bilety и Otvety...</div>
+      <div style="text-align: center; padding: 25px; color: var(--accent-cyan);">⏳ Загрузка тестов и ключей из корневой папки...</div>
     </div>
   </article>
 
@@ -395,7 +395,7 @@
     isExamMode = false;
   }
 
-  // Парсер файла вопросов (Bilety/ТЕСТ X.docx)
+  // Парсер файла вопросов (ТЕСТ X.docx)
   function parseTestText(fullText, ticketNum) {
     const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
     let parsedData = [];
@@ -443,7 +443,7 @@
     return parsedData;
   }
 
-  // Парсер файла ключей (Otvety/КЛЮЧ X.docx)
+  // Парсер файла ключей (КЛЮЧ X.docx)
   function parseKeyText(fullText) {
     const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
     let answersMap = {};
@@ -484,25 +484,25 @@
     return answersMap;
   }
 
-  // Загрузчик 17 пар файлов Билетов и Ключей
+  // Загрузчик 17 пар файлов ТЕСТ и КЛЮЧ из корня
   async function loadAllTicketsAndAnswers() {
     AppState.totalAnswered = SavedProgressState.totalAnswered;
     AppState.correctCount = SavedProgressState.correctCount;
     AppState.errorIds = SavedProgressState.errorIds || [];
     AppState.favoritesIds = SavedProgressState.favoritesIds || [];
 
-    const totalTickets = 17; // По количеству файлов в ваших скриншотах
+    const totalTickets = 17;
     let allTests = [];
 
     try {
       let promises = [];
       for (let i = 1; i <= totalTickets; i++) {
-        const testPromise = fetch(`Bilety/ТЕСТ ${i}.docx`)
+        const testPromise = fetch(`ТЕСТ ${i}.docx`)
           .then(res => res.ok ? res.arrayBuffer() : null)
           .then(buf => buf ? mammoth.extractRawText({ arrayBuffer: buf }) : null)
           .catch(() => null);
           
-        const keyPromise = fetch(`Otvety/КЛЮЧ ${i}.docx`)
+        const keyPromise = fetch(`КЛЮЧ ${i}.docx`)
           .then(res => res.ok ? res.arrayBuffer() : null)
           .then(buf => buf ? mammoth.extractRawText({ arrayBuffer: buf }) : null)
           .catch(() => null);
@@ -513,12 +513,11 @@
       let results = await Promise.all(promises);
 
       results.forEach(([testTextRes, keyTextRes, ticketNum]) => {
-        if (!testTextRes) return; // Если файл теста не найден, пропускаем
+        if (!testTextRes) return;
 
         let questions = parseTestText(testTextRes.value, ticketNum);
         let answersMap = keyTextRes ? parseKeyText(keyTextRes.value) : {};
 
-        // Объединяем вопрос с правильным ответом и обоснованием из файла КЛЮЧИ
         questions.forEach(q => {
           let keyData = answersMap[q.originalIndex];
           if (keyData) {
@@ -533,14 +532,14 @@
       });
 
       if (allTests.length === 0) {
-        throw new Error("Не удалось загрузить данные из папок Bilety и Otvety");
+        throw new Error("Не удалось загрузить данные тестов из корня репозитория");
       }
 
       RAW_EXCEL_TESTS = allTests;
       finishInitialization();
 
     } catch (err) {
-      showError("Не удалось загрузить файлы из папок Bilety и Otvety. Убедитесь, что папки и файлы ('ТЕСТ 1.docx' ... 'КЛЮЧ 1.docx') загружены в репозиторий.");
+      showError("Не удалось загрузить файлы ('ТЕСТ 1.docx' ... 'КЛЮЧ 1.docx'). Проверьте, что они находятся в корне репозитория.");
     }
   }
 
